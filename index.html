@@ -178,7 +178,7 @@
         lucide.createIcons();
 
         // ------------------------------------------------------------------
-        // XÓA CHỮ "HÃY_DÁN_VÀO_ĐÂY" VÀ DÁN TOÀN BỘ ĐOẠN KHỐI { ... } FIREBASE CỦA BẠN VÀO ĐÂY
+        // ĐÃ TÍCH HỢP CẤU HÌNH FIREBASE CỦA BẠN
         // ------------------------------------------------------------------
         const firebaseConfig = { 
   apiKey : "AIzaSyAiwq7c4DT9wn8z9p6Z68RTg2sytNHdvew" , 
@@ -189,9 +189,7 @@
   messagingSenderId : "342121257942" , 
   appId : "1:342121257942:web:5d27ba69c6b13b0b22e277" 
 };
-        
-        // ĐỔI CHỮ false THÀNH true SAU KHI ĐÃ DÁN CẤU HÌNH FIREBASE Ở TRÊN
-        const isConfigured = true; 
+        const isConfigured = true; // Đã cấu hình thành công
 
         // Khởi tạo Firebase
         let database;
@@ -211,7 +209,7 @@
         let hasSignature = false;
         let isDrawing = false;
         
-        // MÃ PIN ĐỂ MỞ HÒM LƯU BÚT CỦA NGỌC ÁNH
+        // MÃ PIN ĐÃ ĐƯỢC ĐỔI THÀNH CỦA BẠN TẠI ĐÂY
         const PIN_CODE = 'anh_2008';
 
         // 2. DOM ELEMENTS
@@ -260,7 +258,7 @@
             });
 
             if (!isConfigured) {
-                showNotif('Bạn chưa cấu hình Firebase mới!', 'error');
+                showNotif('Vui lòng kết nối Firebase trong code để dùng chức năng gửi!', 'error');
                 return;
             }
 
@@ -270,11 +268,14 @@
                 const data = snapshot.val();
                 entries = [];
                 if (data) {
+                    // Chuyển object thành mảng và sắp xếp (Mới nhất lên đầu)
                     entries = Object.keys(data).map(key => ({
-                        firebaseKey: key, 
+                        firebaseKey: key, // Lưu lại key để xóa
                         ...data[key]
                     })).reverse();
                 }
+                
+                // Nếu đang ở màn hình admin thì render lại
                 if (viewMode === 'admin') {
                     renderAdminList();
                 }
@@ -316,11 +317,12 @@
         photoUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Resize ảnh qua Canvas để giảm dung lượng trước khi gửi lên Firebase
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
                     img.onload = () => {
-                        const max_size = 800; 
+                        const max_size = 800; // Giới hạn kích thước ảnh 800px để không nặng Firebase
                         let width = img.width; let height = img.height;
                         if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } } 
                         else { if (height > max_size) { width *= max_size / height; height = max_size; } }
@@ -330,7 +332,7 @@
                         const tCtx = tempCanvas.getContext('2d');
                         tCtx.drawImage(img, 0, 0, width, height);
                         
-                        currentPhotoData = tempCanvas.toDataURL('image/jpeg', 0.6); 
+                        currentPhotoData = tempCanvas.toDataURL('image/jpeg', 0.6); // Chất lượng 60%
                         photoPreview.src = currentPhotoData;
                         photoPreviewContainer.classList.remove('hidden');
                     };
@@ -406,7 +408,7 @@
         clearCanvasBtn.addEventListener('click', clearCanvas);
 
         submitBtn.addEventListener('click', () => {
-            if (!isConfigured) { showNotif('Lỗi kết nối máy chủ CSDL mới!', 'error'); return; }
+            if (!isConfigured) { showNotif('Lỗi kết nối CSDL, xem lại file code!', 'error'); return; }
 
             const msgVal = messageInput.value.trim();
             const nameVal = senderNameInput.value.trim();
@@ -418,19 +420,21 @@
             const newEntry = {
                 name: isAnon ? 'Người bạn ẩn danh' : nameVal,
                 message: msgVal,
-                photo: currentPhotoData || "", 
+                photo: currentPhotoData || "", // Chuỗi rỗng nếu không có ảnh
                 signature: hasSignature ? canvas.toDataURL('image/png') : "",
                 mood: currentMood,
                 date: new Date().toLocaleString('vi-VN'),
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             };
 
+            // Gửi dữ liệu lên Firebase
             submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Đang gửi...';
             submitBtn.disabled = true;
             lucide.createIcons();
 
             database.ref('luubut_entries').push(newEntry)
                 .then(() => {
+                    // Thành công: Reset form
                     senderNameInput.value = ''; messageInput.value = '';
                     isAnonymousCheck.checked = false; senderNameInput.disabled = false;
                     senderNameInput.placeholder = "Tên hoặc biệt danh của bạn...";
@@ -500,16 +504,16 @@
 
                         <div class="bg-stone-50 p-4 rounded-xl text-stone-700 whitespace-pre-wrap leading-relaxed border border-stone-100 mb-4">${entry.message}</div>
 
-                        \${entry.photo ? `
+                        ${entry.photo ? `
                         <div class="mb-4">
                             <p class="text-xs font-semibold text-stone-400 mb-2 uppercase tracking-wider">Ảnh đính kèm:</p>
-                            <img src="\${entry.photo}" alt="Đính kèm" class="max-w-full sm:max-w-sm rounded-xl border border-stone-200 shadow-sm" />
+                            <img src="${entry.photo}" alt="Đính kèm" class="max-w-full sm:max-w-sm rounded-xl border border-stone-200 shadow-sm" />
                         </div>` : ''}
 
-                        \${entry.signature ? `
+                        ${entry.signature ? `
                         <div class="mt-4 pt-4 border-t border-stone-100">
                             <p class="text-xs font-semibold text-stone-400 mb-2 uppercase tracking-wider">Chữ ký:</p>
-                            <img src="\${entry.signature}" alt="Chữ ký" class="h-24 object-contain" />
+                            <img src="${entry.signature}" alt="Chữ ký" class="h-24 object-contain" />
                         </div>` : ''}
                     </div>
                 `).join('');
@@ -517,6 +521,7 @@
             lucide.createIcons();
         }
 
+        // Xóa khỏi Firebase
         window.deleteEntry = function(firebaseKey) {
             if (confirm('Bạn có chắc muốn xóa lời chúc này khỏi đám mây?')) {
                 database.ref('luubut_entries/' + firebaseKey).remove()

@@ -9,6 +9,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <style>
         .lined-paper {
@@ -210,8 +211,7 @@
         let isDrawing = false;
         
         // MÃ PIN ĐÃ ĐƯỢC ĐỔI THÀNH CỦA BẠN TẠI ĐÂY
-        const PIN_CODE = 'anh_2008';
-
+        
         // 2. DOM ELEMENTS
         const toggleViewBtn = document.getElementById('toggleViewBtn');
         const headerIcon = document.getElementById('headerIcon');
@@ -537,10 +537,20 @@
         const closePinModal = document.getElementById('closePinModal');
 
         function handleLogin() {
-            if (pinInput.value === PIN_CODE) {
-                isAuthenticated = true; pinModal.classList.add('hidden');
-                pinInput.value = ''; switchToAdmin();
-            } else { showNotif('Mã PIN không chính xác!', 'error'); }
+            // Mã hóa cụm chữ người dùng nhập vào ô PIN bằng công nghệ MD5
+            const hashedInput = CryptoJS.MD5(pinInput.value).toString();
+            
+            // Đây là chuỗi đã mã hóa của mật khẩu "anh_2008" - nhìn vào không ai đoán được chữ gốc
+            const SECURE_PIN_HASH = 'd03e9154ef979857d76377e682281a8b';
+
+            if (hashedInput === SECURE_PIN_HASH) {
+                isAuthenticated = true; 
+                pinModal.classList.add('hidden');
+                pinInput.value = ''; 
+                switchToAdmin();
+            } else { 
+                showNotif('Mã PIN không chính xác!', 'error'); 
+            }
         }
 
         loginBtn.addEventListener('click', handleLogin);
